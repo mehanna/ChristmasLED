@@ -9,10 +9,10 @@
 #define DATA_PIN    2
 #define LED_TYPE    WS2811
 #define COLOR_ORDER GRB
-#define NUM_LEDS    50
+#define NUM_LEDS    350
 #define BRIGHTNESS  255
 #define FRAMES_PER_SECOND  120
-#define updatTime 20
+#define updatTime 30
 
 CRGB leds[NUM_LEDS];
 
@@ -53,9 +53,9 @@ void removePattern(uint8_t index) {
 // =======================
 
 const TProgmemPalette16 myRedWhiteBluePalette_p PROGMEM = {
-  CRGB::Red, CRGB::Gray, CRGB::Blue, CRGB::Black,
-  CRGB::Red, CRGB::Gray, CRGB::Blue, CRGB::Black,
-  CRGB::Red, CRGB::Red, CRGB::Gray, CRGB::Gray,
+  CRGB::Green, CRGB::Gray, CRGB::Blue, CRGB::Black,
+  CRGB::Green, CRGB::Gray, CRGB::Blue, CRGB::Black,
+  CRGB::Green, CRGB::Green, CRGB::Gray, CRGB::Gray,
   CRGB::Blue, CRGB::Blue, CRGB::Black, CRGB::Black
 };
 
@@ -135,7 +135,23 @@ void setup() {
   currentBlending = NOBLEND;
   Serial.begin(9600);
 
-  // Add only the patterns you want to run:
+
+  /*pattern for christmas tree*/
+  addPattern(rainbow);
+  addPattern(rainbowWithGlitter);
+  addPattern(confetti);
+  addPattern(juggle);
+  addPattern(bpm);
+  addPattern(ColorPaletteloop);
+  addPattern(rainbowChase);
+  addPattern(colorWaves);
+  addPattern(movingRainbowBands);
+  addPattern(paletteBlendWaves);
+  addPattern(sinelonRainbow);
+
+
+  /*pattern for outdoor lights*/
+  /*
   addPattern(rainbow);
   addPattern(rainbowWithGlitter);
   addPattern(confetti);
@@ -143,6 +159,16 @@ void setup() {
   addPattern(juggle);
   addPattern(bpm);
   addPattern(ColorPaletteloop);
+  addPattern(rainbowChase);
+  addPattern(colorWipe);
+  addPattern(colorWaves);
+  ddPattern(meteorRain);
+  addPattern(paletteFireworks);
+  addPattern(movingRainbowBands);
+  addPattern(paletteBlendWaves);
+  addPattern(sinelonRainbow);
+  */
+  
   // You can comment out or add more patterns here
 }
 
@@ -214,6 +240,104 @@ void juggle() {
     dothue += 32;
   }
 }
+
+
+// Candy cane stripes pattern
+void rainbowChase() {
+  static uint8_t startIndex = 0;
+  startIndex++;
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = CHSV((startIndex + i * 8) % 255, 255, 255);
+  }
+}
+
+
+void colorWipe() {
+  static uint8_t colorIndex = 0;
+  static bool forward = true;
+  static int pos = 0;
+  CRGB colors[] = {CRGB::Green, CRGB::White, CRGB::Red};
+  fill_solid(leds, NUM_LEDS, CRGB::Black);
+  leds[pos] = colors[colorIndex];
+  FastLED.show();
+  delay(10);
+  if (forward) {
+    pos++;
+    if (pos >= NUM_LEDS) {
+      pos = NUM_LEDS - 1;
+      forward = false;
+      colorIndex = (colorIndex + 1) % 3;
+    }
+  } else {
+    pos--;
+    if (pos < 0) {
+      pos = 0;
+      forward = true;
+      colorIndex = (colorIndex + 1) % 3;
+    }
+  }
+}
+
+
+void colorWaves() {
+  uint8_t wave1 = beatsin8(9, 0, 255);
+  uint8_t wave2 = beatsin8(7, 0, 255);
+  uint8_t wave3 = beatsin8(5, 0, 255);
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = CHSV((wave1 + wave2 + wave3 + i * 8) % 255, 255, 255);
+  }
+}
+
+void meteorRain() {
+  static uint8_t meteorPos = 0;
+  static uint8_t hue = 0;
+  fadeToBlackBy(leds, NUM_LEDS, 64);
+  for (int i = 0; i < 10; i++) {
+    int pos = (meteorPos + i) % NUM_LEDS;
+    leds[pos] = CHSV(hue + i * 16, 255, 255);
+  }
+  meteorPos = (meteorPos + 1) % NUM_LEDS;
+  hue += 2;
+}
+
+void paletteFireworks() {
+  fadeToBlackBy(leds, NUM_LEDS, 18);
+  if (random8() < 40) {
+    int pos = random16(NUM_LEDS);
+    leds[pos] = ColorFromPalette(currentPalette, random8(), 255, currentBlending);
+    if (pos > 0) leds[pos - 1] += leds[pos];
+    if (pos < NUM_LEDS - 1) leds[pos + 1] += leds[pos];
+  }
+}
+
+void movingRainbowBands() {
+  uint8_t speed = 4;
+  uint8_t scale = 30;
+  for (int i = 0; i < NUM_LEDS; i++) {
+    uint8_t color = sin8(i * scale + millis() / speed);
+    leds[i] = CHSV(color, 255, 255);
+  }
+}
+
+void paletteBlendWaves() {
+  uint8_t wave = beatsin8(7, 0, 255);
+  for (int i = 0; i < NUM_LEDS; i++) {
+    uint8_t index = wave + i * 8;
+    leds[i] = ColorFromPalette(currentPalette, index, 255, currentBlending);
+  }
+}
+
+void sinelonRainbow() {
+  fadeToBlackBy(leds, NUM_LEDS, 20);
+  int pos = beatsin16(13, 0, NUM_LEDS - 1);
+  leds[pos] = CHSV(gHue, 255, 255);
+  // Add extra rainbow dots for more color
+  for (int i = 0; i < 3; i++) {
+    int offset = beatsin16(7 + i * 2, 0, NUM_LEDS - 1);
+    leds[offset] = CHSV(gHue + i * 85, 255, 255);
+  }
+}
+
 
 // =======================
 // Palette Loop Pattern
